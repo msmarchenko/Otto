@@ -1,5 +1,4 @@
 #define FIRMWARE_VERSION "00002"
-
 #include <EEPROM.h>
 #include "Arduino.h"
 #include <Servo.h>
@@ -28,10 +27,9 @@ char chararrVersion[21];
 char chararrPart[21];
 char chararrSerial[21];
 int MODEL_ID;
+unsigned char i;
 
-
-
-
+unsigned char j;
 
 int notes[] = {262, 277, 294, 311, 330, 349, 370, 392, 415, 440, 466, 494, 523, 554, 587, 622, 659, 698, 740, 784, 831, 880, 932, 988, 1047};
 
@@ -47,7 +45,88 @@ const byte COMMAND_STATE_EXECUTING=4;
 
 
 unsigned long startMillis= millis();  // Start of sample window
+///////////////////////////////////////////////////////////////////////MATRIX
+unsigned char now_led[8]={0,0,0,0,0,0,0,0};
+int Max7219_pinCS = 10;
+int Max7219_pinCLK = 11;
+int Max7219_pinDIN = 12;
+unsigned char disp1[50][8] = {
+0x0,  0x7C,  0xFE,  0x82,  0x82,  0xFE,  0x7C,  0x0, //0
+0x0,  0x0,  0x2,  0xFE,  0xFE,  0x42,  0x0,  0x0, //1
+0x0,  0x62,  0xF2,  0x92,  0x9A,  0xCE,  0x46,  0x0,//2
+0x0,  0x6C,  0xFE,  0x92,  0x92,  0xC6,  0x44,  0x0,//3
+0x8,  0xFE,  0xFE,  0xC8,  0x68,  0x38,  0x18,  0x0,//4
+0x0,  0x9C,  0xBE,  0xA2,  0xA2,  0xE6,  0xE4,  0x0,//5
+  0x30, 0x48, 0x44, 0x22, 0x22, 0x44, 0x48, 0x30, // рисунок сердца
+  0x00,0x10,0x18,0x14,0x14,0x18,0x10,0x00,         //узкая улыбка
+  0x10,0x18,0x14,0x14,0x14,0x14,0x18,0x10,         //широкая улыбка
+  0x00,0x10,0x28,0x44,0x44,0x28,0x10,0x00,         //буква 0
+  0x0,  0x7C,  0xFE,  0x82,  0x82,  0xFE,  0x7C,  0x0, //0
+0x0,  0x0,  0x2,  0xFE,  0xFE,  0x42,  0x0,  0x0, //1
+0x0,  0x62,  0xF2,  0x92,  0x9A,  0xCE,  0x46,  0x0,//2
+0x0,  0x6C,  0xFE,  0x92,  0x92,  0xC6,  0x44,  0x0,//3
+0x8,  0xFE,  0xFE,  0xC8,  0x68,  0x38,  0x18,  0x0,//4
+0x0,  0x9C,  0xBE,  0xA2,  0xA2,  0xE6,  0xE4,  0x0,//5
+  0x30, 0x48, 0x44, 0x22, 0x22, 0x44, 0x48, 0x30, // рисунок сердца
+  0x00,0x10,0x18,0x14,0x14,0x18,0x10,0x00,         //узкая улыбка
+  0x10,0x18,0x14,0x14,0x14,0x14,0x18,0x10,         //широкая улыбка
+  0x00,0x10,0x28,0x44,0x44,0x28,0x10,0x00,         //буква 0
+  0x0,  0x7C,  0xFE,  0x82,  0x82,  0xFE,  0x7C,  0x0, //0
+0x0,  0x0,  0x2,  0xFE,  0xFE,  0x42,  0x0,  0x0, //1
+0x0,  0x62,  0xF2,  0x92,  0x9A,  0xCE,  0x46,  0x0,//2
+0x0,  0x6C,  0xFE,  0x92,  0x92,  0xC6,  0x44,  0x0,//3
+0x8,  0xFE,  0xFE,  0xC8,  0x68,  0x38,  0x18,  0x0,//4
+0x0,  0x9C,  0xBE,  0xA2,  0xA2,  0xE6,  0xE4,  0x0,//5
+  0x30, 0x48, 0x44, 0x22, 0x22, 0x44, 0x48, 0x30, // рисунок сердца
+  0x00,0x10,0x18,0x14,0x14,0x18,0x10,0x00,         //узкая улыбка
+  0x10,0x18,0x14,0x14,0x14,0x14,0x18,0x10,         //широкая улыбка
+  0x00,0x10,0x28,0x44,0x44,0x28,0x10,0x00,         //буква 0
+  0x0,  0x0,  0x2,  0xFE,  0xFE,  0x42,  0x0,  0x0, //1
+0x0,  0x62,  0xF2,  0x92,  0x9A,  0xCE,  0x46,  0x0,//2
+0x0,  0x6C,  0xFE,  0x92,  0x92,  0xC6,  0x44,  0x0,//3
+0x8,  0xFE,  0xFE,  0xC8,  0x68,  0x38,  0x18,  0x0,//4
+0x0,  0x9C,  0xBE,  0xA2,  0xA2,  0xE6,  0xE4,  0x0,//5
+  0x30, 0x48, 0x44, 0x22, 0x22, 0x44, 0x48, 0x30, // рисунок сердца
+  0x00,0x10,0x18,0x14,0x14,0x18,0x10,0x00,         //узкая улыбка
+  0x10,0x18,0x14,0x14,0x14,0x14,0x18,0x10,         //широкая улыбка
+  0x00,0x10,0x28,0x44,0x44,0x28,0x10,0x00,         //буква 0
+};
+void Write_Max7219_byte(unsigned char DATA) {
+  unsigned char i;
+  digitalWrite(Max7219_pinCS, LOW);
+  for (i = 8; i >= 1; i--) {
+    digitalWrite(Max7219_pinCLK, LOW);
+    digitalWrite(Max7219_pinDIN, DATA & 0x80);
+    DATA = DATA << 1;
+    digitalWrite(Max7219_pinCLK, HIGH);
+  }
+}
+void Write_Max7219(unsigned char address, unsigned char dat) {
+  digitalWrite(Max7219_pinCS, LOW);
+  Write_Max7219_byte(address);
+  Write_Max7219_byte(dat);
+  digitalWrite(Max7219_pinCS, HIGH);
+}
 
+void Init_MAX7219(void) {
+  Write_Max7219(0x09, 0x00);
+  Write_Max7219(0x0a, 0x03);
+  Write_Max7219(0x0b, 0x07);
+  Write_Max7219(0x0c, 0x01);
+  Write_Max7219(0x0f, 0x00);
+}
+void cleaR()
+{
+    for (i = 1; i < 9; i++)
+    Write_Max7219(i, 0x00);
+}
+void updatE()
+{
+    for (i = 1; i < 9; i++)
+    Write_Max7219(i, now_led[i-1]);
+}
+////////////////////////////////////////////////////ENDMATRIX
+////////////////////////////////////////////////////SERIALNUMBER
 void parseSerialNumber(){
     EEPROM.get(SERIAL_ADDRESS, chararrSerialRaw);
     int iPointer = 0;
@@ -124,7 +203,8 @@ void parseSerialNumber(){
        MODEL_ID=9999;
     }
 }
-
+///////////////////////////////////////////////////////ENDSERIALNUMBER
+///////////////////////////////////////////////////////ULTRASONIC
 int getDist(){
     digitalWrite(8, LOW);
     delayMicroseconds(2);
@@ -139,25 +219,44 @@ int getDist(){
     }
     return distance;
 }
+////////////////////////////////////////////////////ENDULTRASONIC]
+///////////////////////////////////////////////////HANDS
+Servo HandL;
+Servo HandR;
+///////////////////////////////////////////////////ENDHANDS
 void printSensors(){
 
     Serial.write('#');
-    Serial.write(getDist());
+   // Serial.write(getDist());
     Serial.println(getDist());
+    if(analogRead(A7)>100)
+    Serial.println(1);
+    else
+    Serial.println(0);
   }
-
+byte k;
 void setup(){
+  k=0;
     parseSerialNumber();
     Serial.begin(SERIAL_SPEED);
-    //EEPROM.get(0, chararrSerialRaw);
-   // Serial.print("robot id is: ");
-    //Serial.print(chararrSerialRaw);
+    EEPROM.get(0, chararrSerialRaw);
+    Serial.print("robot id is: ");
+    Serial.println(chararrSerialRaw);
   pinMode( 8 , OUTPUT );
   pinMode( 9 , INPUT );
+   pinMode( A7 , INPUT );
   commandState=COMMAND_STATE_WAITING_COMMAND;
   Otto.init(PIN_LEFT_LEG,PIN_RIGHT_LEG,PIN_LEFT_FOOT,PIN_RIGHT_FOOT,true);
   Otto.setTrims(TRIM_LEFT_LEG,TRIM_RIGHT_LEG, TRIM_LEFT_FOOT, TRIM_RIGHT_FOOT);
+  HandL.attach(6);
+  HandR.attach(7);
   Otto.home();
+  pinMode(Max7219_pinCLK, OUTPUT);
+  pinMode(Max7219_pinCS, OUTPUT);
+  pinMode(Max7219_pinDIN, OUTPUT);
+  delay(50);
+  Init_MAX7219();
+  cleaR();
 }
 
 byte bytearrayData[20];
@@ -168,38 +267,53 @@ void loop(){
 //Serial.println(getDist());
 
 //staying
-int k;
-    for (k=0;k<5;k++)
-    Otto.jump(2,300);
-    for (k=0;k<5;k++)
-     Otto.updown(1,1000,20);//float steps=1, int T=1000, int h = 20
+
+
+   //analogWrite(A0, 255);//rgb
+   //analogWrite(A1, 0);//rgb
+   //analogWrite(A2, 0);//rgb
+   //digitalWrite(13,HIGH);//dolbilka
+   //delay(100);
+   //digitalWrite(13,LOW);//dolbilka
+   //k=getDist();
+//   k=analogRead(A7);/// slushalka
+ //  Serial.println(k);
+
+ //   analogWrite(A7, 100);
+ //   delay(100);
+   //delay(1000);
+   //if(k==1)
+   //k=0;
+//Serial.println("123");
+//delay(100); // for (k=0;k<5;k++)
+//Otto.jump(2,300);
+    //for (k=0;k<5;k++)
+     //Otto.updown(1,1000,20);//float steps=1, int T=1000, int h = 20
     //Otto.swing();//float steps=1, int T=1000, int h=20
     //TODO Otto.tiptoeSwing();//float steps=1, int T=900, int h=20
-    for (k=0;k<5;k++)
-     Otto.jitter(5,100, 40);//float steps=1, int T=500, int h=20
+    //for (k=0;k<5;k++)
+     //Otto.jitter(5,100, 40);//float steps=1, int T=500, int h=20
     // Otto.ascendingTurn();//float steps=1, int T=900, int h=20
-    for (k=0;k<5;k++)
-    Otto.shakeLeg ();//int steps=1, int T = 2000, int dir=RIGHT);
+   // for (k=0;k<5;k++)
+    //Otto.shakeLeg ();//int steps=1, int T = 2000, int dir=RIGHT);
 //forw/back
     //TODO TODO Otto.crusaito();//float steps=1, int T=900, int h=20, int dir=FORWARD
     //TODO TODO Otto.flapping(1,1000,);//float steps=1, int T=1000, int h=20, int dir=FORWARD
     //TODO TODO Otto.walk(10,125,FORWARD);
 //left/right
    //TODO TODO Otto.turn();//float steps=4, int T=2000, int dir = LEFT
-   //TODO TODO 
-   for (k=0;k<5;k++)
-   Otto.turn(3,1000);
+   //TODO TODO
+   //for (k=0;k<5;k++)
+   //Otto.turn(3,1000);
   // Otto.bend (3,1000);//int steps=1, int T=1400, int dir=LEFT
    //TODO TODO Otto.moonwalker();//float steps=1, int T=900, int h=20, int dir=LEFT
 
  //delay(1000);
  // NR_Servo.write(11);
-
   // Otto.crusaito();
-}
- /*
    if( Serial.available() ){
       byte b = Serial.read();
+      //Serial.println(";");Serial.println(b);Serial.println(byteDataTail);Serial.println(";");
       if(commandState== COMMAND_STATE_WAITING_COMMAND){
          switch(b){
             case ' ':{
@@ -254,6 +368,42 @@ int k;
               commandState = COMMAND_STATE_WAITING_DATA;
               break;
             }
+            case 'd':{//1 led change
+              command = b;
+              commandState = COMMAND_STATE_WAITING_DATA;
+              break;
+            }
+            case 'e':{//set your picture
+              command = b;
+              commandState = COMMAND_STATE_WAITING_DATA;
+              break;
+            }
+            case 'f':{//set default picture
+              command = b;
+              commandState = COMMAND_STATE_WAITING_DATA;
+              break;
+            }            
+            case 'g':{//nose colour
+              command = b;
+              commandState = COMMAND_STATE_WAITING_DATA;
+              break;
+            }
+            case 'h':{//play note
+              command = b;
+              commandState = COMMAND_STATE_WAITING_DATA;
+              break;
+            }
+            case 'i':{//set hands
+              command = b;
+              commandState = COMMAND_STATE_WAITING_DATA;
+              break;
+            }
+            case 'j':{//if needed
+              command = b;
+              commandState = COMMAND_STATE_WAITING_DATA;
+              break;
+            }
+ 
             case 's':{//serv state
               command = b;
               commandState = COMMAND_STATE_WAITING_DATA;
@@ -264,6 +414,7 @@ int k;
       else if(commandState==COMMAND_STATE_WAITING_DATA){
          bytearrayData[byteDataTail] = b;
          byteDataTail++;
+        // Serial.println(b);
          switch(command){
             case 'b': {
               if (byteDataTail > 3) {
@@ -277,6 +428,49 @@ int k;
             }
             break;
             }
+            case 'd': {
+            if (byteDataTail > 0) {
+              commandState = COMMAND_STATE_WAITING_CRC;
+            }
+            break;
+            }
+            case 'e': {
+            if (byteDataTail > 7) {
+              commandState = COMMAND_STATE_WAITING_CRC;
+            }
+            break;
+            }
+            case 'f': {
+            if (byteDataTail > 0) {
+              commandState = COMMAND_STATE_WAITING_CRC;
+            }
+            break;
+            }
+            case 'g': {
+            if (byteDataTail > 0) {
+              commandState = COMMAND_STATE_WAITING_CRC;
+            }
+            break;
+            }
+            case 'h': {
+            if (byteDataTail > 1) {
+              commandState = COMMAND_STATE_WAITING_CRC;
+            }
+            break;
+            }
+            case 'i': {
+            if (byteDataTail > 1) {
+              commandState = COMMAND_STATE_WAITING_CRC;
+            }
+            break;
+            }
+            case 'j': {
+            if (byteDataTail > 3) {
+              commandState = COMMAND_STATE_WAITING_CRC;
+            }
+            break;
+            }
+            
             case 's': {
             if (byteDataTail > 4) {
               commandState = COMMAND_STATE_WAITING_CRC;
@@ -286,7 +480,6 @@ int k;
          }
       }
       else if(commandState==COMMAND_STATE_WAITING_CRC){
-
          if(b == '$'){
             switch(command){
               case 'a':{
@@ -397,7 +590,63 @@ int k;
                 }
                 printSensors();
                 break;
-              }
+              }            
+              case 'd':{//1 led
+              //  Serial.println(bytearrayData[0]);
+                byte vkl = bitRead(bytearrayData[0],0);
+                byte str = bitRead(bytearrayData[0],1)*1+bitRead(bytearrayData[0],2)*2+bitRead(bytearrayData[0],3)*4;
+                byte stolb = bitRead(bytearrayData[0],4)*1+bitRead(bytearrayData[0],5)*2+bitRead(bytearrayData[0],6)*4;
+               // Serial.println(vkl);
+                //Serial.println(str);
+                //Serial.println(stolb);
+                bitWrite(now_led[stolb],str,vkl);
+                updatE();
+                  printSensors();
+                  break;
+               }              
+              case 'e':{//set your pic
+                //Serial.println("e");
+                  for(i=0;i<8;i++)
+                  now_led[i]=bytearrayData[i];   
+                  updatE();
+                  printSensors();
+                  break;
+               }
+              case 'f':{//set default pic
+                //Serial.println(bytearrayData[0]);
+               // *now_led=*disp1[bytearrayData[0]];
+               for(i=0;i<8;i++)
+               now_led[i]=disp1[bytearrayData[0]][i];
+                     updatE();
+                  printSensors();
+                  break;
+               }
+              case 'g':{//nose
+               // Serial.println(bytearrayData[0]);Serial.print(" "); Serial.print(bitRead(bytearrayData[0],0)); Serial.print(" "); Serial.print(bitRead(bytearrayData[0],1));  Serial.print(" "); Serial.println(bitRead(bytearrayData[0],2));
+                analogWrite(A0, 255*bitRead(bytearrayData[0],0));//rgb
+                analogWrite(A1, 255*bitRead(bytearrayData[0],1));//rgb
+                analogWrite(A2, 255*bitRead(bytearrayData[0],2));//rgb
+                //analogWrite(A2, 0);//rgb
+                  printSensors();
+                  break;
+               }
+              case 'h':{//note
+                int note = bytearrayData[0]+(bytearrayData[1]<<4)*4;
+                int dura = bytearrayData[1]%16;
+                tone(13,note,1000/dura);
+                  printSensors();
+                  break;
+               }
+              case 'i':{//hands
+                  HandL.write(bytearrayData[0]);
+                  HandR.write(bytearrayData[1]);
+                  printSensors();
+                  break;
+               }
+              case 'j':{//reserved
+                  printSensors();
+                  break;
+               }
               case 's': {
                 int tim = 125 * bytearrayData[0];
                 int a[4];
@@ -412,7 +661,7 @@ int k;
             }
          }
          commandState=COMMAND_STATE_WAITING_COMMAND;
+         byteDataTail=0;
       }
    }
 }
-*/
