@@ -9,10 +9,10 @@
 #define data 2
 #define clock 4
 
-#define PIN_LEFT_LEG   2
-#define PIN_RIGHT_LEG  3
-#define PIN_LEFT_FOOT  4
-#define PIN_RIGHT_FOOT 5
+#define PIN_LEFT_LEG   3
+#define PIN_RIGHT_LEG  4
+#define PIN_LEFT_FOOT  5
+#define PIN_RIGHT_FOOT 6
 
 #define TRIM_LEFT_LEG   0
 #define TRIM_RIGHT_LEG  0
@@ -126,11 +126,11 @@ void parseSerialNumber(){
 }
 
 int getDist(){
-    digitalWrite(8, LOW);
+    digitalWrite(2, LOW);
     delayMicroseconds(2);
-    digitalWrite(8, HIGH);
+    digitalWrite(2, HIGH);
     delayMicroseconds(10);
-    digitalWrite(8, LOW);
+    digitalWrite(2, LOW);
     long microseconds = pulseIn(9,HIGH,40000); //40000
     long distance;
      distance = microseconds/29/2;
@@ -146,12 +146,12 @@ void printSensors(){
   }
 
 void setup(){
-    parseSerialNumber();
+    //parseSerialNumber();
     Serial.begin(SERIAL_SPEED);
-    //EEPROM.get(0, chararrSerialRaw);
-   // Serial.print("robot id is: ");
-    //Serial.print(chararrSerialRaw);
-  pinMode( 8 , OUTPUT );
+
+    Serial.print("robot id is: ");
+
+  pinMode( 2 , OUTPUT );
   pinMode( 9 , INPUT );
   commandState=COMMAND_STATE_WAITING_COMMAND;
   Otto.init(PIN_LEFT_LEG,PIN_RIGHT_LEG,PIN_LEFT_FOOT,PIN_RIGHT_FOOT,true);
@@ -168,7 +168,7 @@ void loop(){
 
 //staying
    // TODO TODO Otto.jump(2,300);
-    //TODO Otto.updown();//float steps=1, int T=1000, int h = 20
+ Otto.updown();//float steps=1, int T=1000, int h = 20
     //TODO Otto.swing();//float steps=1, int T=1000, int h=20
     //TODO Otto.tiptoeSwing();//float steps=1, int T=900, int h=20
     //TODO Otto.jitter();//float steps=1, int T=500, int h=20
@@ -183,7 +183,9 @@ void loop(){
    //TODO TODO Otto.bend ();//int steps=1, int T=1400, int dir=LEFT
    //TODO TODO Otto.moonwalker();//float steps=1, int T=900, int h=20, int dir=LEFT
 
- //delay(1000);
+ delay(1000);
+}
+ /*
  // NR_Servo.write(11);
    if( Serial.available() ){
       byte b = Serial.read();
@@ -402,3 +404,4 @@ void loop(){
       }
    }
 }
+//*/

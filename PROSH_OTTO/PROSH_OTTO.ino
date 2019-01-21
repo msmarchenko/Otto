@@ -1,4 +1,5 @@
 #define FIRMWARE_VERSION "00002"
+#include "HC_SR04.h"
 #include <EEPROM.h>
 #include "Arduino.h"
 #include <Servo.h>
@@ -8,10 +9,32 @@
 #define data 2
 #define clock 4
 
-#define PIN_LEFT_LEG   2
-#define PIN_RIGHT_LEG  3
-#define PIN_LEFT_FOOT  4
-#define PIN_RIGHT_FOOT 5
+#define ECHO_INT 0
+
+#define PIN_BLUE_0     0
+#define PIN_BLUE_1     1
+
+#define PIN_R          3
+#define PIN_G          5
+#define PIN_B          6
+
+#define PIN_SONIC_ECHO 2
+#define PIN_SONIC_TRIG 9
+
+#define PIN_MATRIX_CS  10
+#define PIN_MATRIX_CLK 11
+#define PIN_MATRIX_DIN 12
+
+#define PIN_BUZZER     13
+
+#define PIN_LEFT_LEG   14
+#define PIN_RIGHT_LEG  15
+#define PIN_LEFT_FOOT  16
+#define PIN_RIGHT_FOOT 17
+#define PIN_LEFT_HAND  6
+#define PIN_RIGHT_HAND 7
+
+#define PIN_MICROPHONE  A7
 
 #define TRIM_LEFT_LEG   0
 #define TRIM_RIGHT_LEG  0
@@ -47,9 +70,7 @@ const byte COMMAND_STATE_EXECUTING=4;
 unsigned long startMillis= millis();  // Start of sample window
 ///////////////////////////////////////////////////////////////////////MATRIX
 unsigned char now_led[8]={0,0,0,0,0,0,0,0};
-int Max7219_pinCS = 10;
-int Max7219_pinCLK = 11;
-int Max7219_pinDIN = 12;
+
 unsigned char disp1[50][8] = {
 0x0,  0x7C,  0xFE,  0x82,  0x82,  0xFE,  0x7C,  0x0, //0
 0x0,  0x0,  0x2,  0xFE,  0xFE,  0x42,  0x0,  0x0, //1
@@ -93,19 +114,19 @@ unsigned char disp1[50][8] = {
 };
 void Write_Max7219_byte(unsigned char DATA) {
   unsigned char i;
-  digitalWrite(Max7219_pinCS, LOW);
+  digitalWrite(PIN_MATRIX_CS, LOW);
   for (i = 8; i >= 1; i--) {
-    digitalWrite(Max7219_pinCLK, LOW);
-    digitalWrite(Max7219_pinDIN, DATA & 0x80);
+    digitalWrite(PIN_MATRIX_CLK, LOW);
+    digitalWrite(PIN_MATRIX_DIN, DATA & 0x80);
     DATA = DATA << 1;
-    digitalWrite(Max7219_pinCLK, HIGH);
+    digitalWrite(PIN_MATRIX_CLK, HIGH);
   }
 }
 void Write_Max7219(unsigned char address, unsigned char dat) {
-  digitalWrite(Max7219_pinCS, LOW);
+  digitalWrite(PIN_MATRIX_CS, LOW);
   Write_Max7219_byte(address);
   Write_Max7219_byte(dat);
-  digitalWrite(Max7219_pinCS, HIGH);
+  digitalWrite(PIN_MATRIX_CS, HIGH);
 }
 
 void Init_MAX7219(void) {
@@ -205,19 +226,14 @@ void parseSerialNumber(){
 }
 ///////////////////////////////////////////////////////ENDSERIALNUMBER
 ///////////////////////////////////////////////////////ULTRASONIC
+HC_SR04 sensor(PIN_SONIC_TRIG, PIN_SONIC_ECHO, ECHO_INT);
 int getDist(){
-    digitalWrite(8, LOW);
-    delayMicroseconds(2);
-    digitalWrite(8, HIGH);
-    delayMicroseconds(10);
-    digitalWrite(8, LOW);
-    long microseconds = pulseIn(9,HIGH,40000); //40000
-    long distance;
-     distance = microseconds/29/2;
-     if (distance == 0){
-       distance = 999;
-    }
-    return distance;
+  if(sensor.isFinished()){
+    // Do something with the range...
+    Serial.print(sensor.getRange());
+    Serial.println("cm");
+    sensor.start();
+  }
 }
 ////////////////////////////////////////////////////ENDULTRASONIC]
 ///////////////////////////////////////////////////HANDS
@@ -229,88 +245,89 @@ void printSensors(){
     Serial.write('#');
    // Serial.write(getDist());
     Serial.println(getDist());
-    if(analogRead(A7)>100)
+    if(analogRead(PIN_MICROPHONE)>100)
     Serial.println(1);
     else
     Serial.println(0);
   }
-byte k;
 void setup(){
-  k=0;
-    parseSerialNumber();
-    Serial.begin(SERIAL_SPEED);
-    EEPROM.get(0, chararrSerialRaw);
-    Serial.print("robot id is: ");
-    Serial.println(chararrSerialRaw);
-  pinMode( 8 , OUTPUT );
-  pinMode( 9 , INPUT );
-   pinMode( A7 , INPUT );
+  parseSerialNumber();
+  sensor.begin();
+  Serial.begin(SERIAL_SPEED);
+  EEPROM.get(0, chararrSerialRaw);
+  Serial.print("robot id is: ");
+  Serial.println(chararrSerialRaw);
+  
+  pinMode(PIN_R, OUTPUT);
+  pinMode(PIN_G, OUTPUT);
+  pinMode(PIN_B, OUTPUT);
+  
+  pinMode(PIN_LEFT_LEG, OUTPUT); 
+  pinMode(PIN_RIGHT_LEG, OUTPUT); 
+  pinMode(PIN_LEFT_FOOT, OUTPUT); 
+  pinMode(PIN_RIGHT_FOOT, OUTPUT);
+  
+  pinMode(PIN_MATRIX_CLK, OUTPUT);
+  pinMode(PIN_MATRIX_CS, OUTPUT);
+  pinMode(PIN_MATRIX_DIN, OUTPUT); 
+  
+  pinMode(PIN_MICROPHONE , INPUT ); 
   commandState=COMMAND_STATE_WAITING_COMMAND;
+    
   Otto.init(PIN_LEFT_LEG,PIN_RIGHT_LEG,PIN_LEFT_FOOT,PIN_RIGHT_FOOT,true);
   Otto.setTrims(TRIM_LEFT_LEG,TRIM_RIGHT_LEG, TRIM_LEFT_FOOT, TRIM_RIGHT_FOOT);
-  HandL.attach(6);
-  HandR.attach(7);
   Otto.home();
-  pinMode(Max7219_pinCLK, OUTPUT);
-  pinMode(Max7219_pinCS, OUTPUT);
-  pinMode(Max7219_pinDIN, OUTPUT);
+  HandL.attach(PIN_LEFT_HAND);                                                   
+  HandR.attach(PIN_RIGHT_HAND);
+  
+
   delay(50);
   Init_MAX7219();
   cleaR();
+  while(!Serial) continue;
+  sensor.start();
 }
+
 
 byte bytearrayData[20];
 byte byteDataTail=0;
 byte command=0;
+byte diod=1;
+byte zz=0;
 
 void loop(){
-//Serial.println(getDist());
-
-//staying
-
-
-   //analogWrite(A0, 255);//rgb
-   //analogWrite(A1, 0);//rgb
-   //analogWrite(A2, 0);//rgb
-   //digitalWrite(13,HIGH);//dolbilka
-   //delay(100);
-   //digitalWrite(13,LOW);//dolbilka
-   //k=getDist();
-//   k=analogRead(A7);/// slushalka
- //  Serial.println(k);
-
- //   analogWrite(A7, 100);
- //   delay(100);
-   //delay(1000);
-   //if(k==1)
-   //k=0;
-//Serial.println("123");
-//delay(100); // for (k=0;k<5;k++)
-//Otto.jump(2,300);
+  printSensors();
+     HandL.write(90);
+     delay(100);
+      HandR.write(0);
+delay(100);
+    //Otto.jump(2,300);
     //for (k=0;k<5;k++)
-     //Otto.updown(1,1000,20);//float steps=1, int T=1000, int h = 20
-    //Otto.swing();//float steps=1, int T=1000, int h=20
+    //Otto.updown(1,1000,20);//float steps=1, int T=1000, int h = 20
+     Otto.crusaito();//float steps=1, int T=1000, int h=20
+    HandR.write(180);
+    HandL.write(180);
+    analogWrite(3,180);
+    delay(100);
+}
+    /*
     //TODO Otto.tiptoeSwing();//float steps=1, int T=900, int h=20
     //for (k=0;k<5;k++)
-     //Otto.jitter(5,100, 40);//float steps=1, int T=500, int h=20
+    //Otto.jitter(5,100, 40);//float steps=1, int T=500, int h=20
     // Otto.ascendingTurn();//float steps=1, int T=900, int h=20
-   // for (k=0;k<5;k++)
+    // for (k=0;k<5;k++)
     //Otto.shakeLeg ();//int steps=1, int T = 2000, int dir=RIGHT);
-//forw/back
+    //forw/back
     //TODO TODO Otto.crusaito();//float steps=1, int T=900, int h=20, int dir=FORWARD
     //TODO TODO Otto.flapping(1,1000,);//float steps=1, int T=1000, int h=20, int dir=FORWARD
     //TODO TODO Otto.walk(10,125,FORWARD);
-//left/right
-   //TODO TODO Otto.turn();//float steps=4, int T=2000, int dir = LEFT
-   //TODO TODO
-   //for (k=0;k<5;k++)
-   //Otto.turn(3,1000);
-  // Otto.bend (3,1000);//int steps=1, int T=1400, int dir=LEFT
-   //TODO TODO Otto.moonwalker();//float steps=1, int T=900, int h=20, int dir=LEFT
-
- //delay(1000);
- // NR_Servo.write(11);
-  // Otto.crusaito();
+    //left/right
+    //TODO TODO Otto.turn();//float steps=4, int T=2000, int dir = LEFT
+    //TODO TODO
+    //for (k=0;k<5;k++)
+    //Otto.turn(3,1000);
+    // Otto.bend (3,1000);//int steps=1, int T=1400, int dir=LEFT
+    //TODO TODO Otto.moonwalker();//float steps=1, int T=900, int h=20, int dir=LEFT
    if( Serial.available() ){
       byte b = Serial.read();
       //Serial.println(";");Serial.println(b);Serial.println(byteDataTail);Serial.println(";");
@@ -665,3 +682,4 @@ void loop(){
       }
    }
 }
+//*/
