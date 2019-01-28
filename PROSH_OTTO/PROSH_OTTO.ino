@@ -8,6 +8,9 @@
 #define SERIAL_ADDRESS 0
 #define data 2
 #define clock 4
+#define FAST 0
+#define NORMAL 10
+#define SLOW 20
 
 #define ECHO_INT 0
 
@@ -250,7 +253,23 @@ void printSensors(){
     else
     Serial.println(0);
   }
+Servo myservo [6];
+int pos[6];
+int need_pos[6];
+unsigned long times[6];
 void setup(){
+  myservo[0].attach(14);
+  myservo[1].attach(15);
+  myservo[2].attach(16);
+  myservo[3].attach(17);
+  myservo[4].attach(7);
+  myservo[5].attach(8);
+    for(times[0]=0;times[0]<6;times[0]++)
+  {
+  myservo[times[0]].write(90);
+  need_pos[times[0]]=90;
+  pos[times[0]]=90;
+  }
   parseSerialNumber();
   sensor.begin();
   Serial.begin(SERIAL_SPEED);
@@ -274,12 +293,6 @@ void setup(){
   pinMode(PIN_MICROPHONE , INPUT ); 
   commandState=COMMAND_STATE_WAITING_COMMAND;
     
-  Otto.init(PIN_LEFT_LEG,PIN_RIGHT_LEG,PIN_LEFT_FOOT,PIN_RIGHT_FOOT,true);
-  Otto.setTrims(TRIM_LEFT_LEG,TRIM_RIGHT_LEG, TRIM_LEFT_FOOT, TRIM_RIGHT_FOOT);
-  Otto.home();
-  HandL.attach(PIN_LEFT_HAND);                                                   
-  HandR.attach(PIN_RIGHT_HAND);
-  
 
   delay(50);
   Init_MAX7219();
@@ -296,21 +309,36 @@ byte diod=1;
 byte zz=0;
 
 void loop(){
-  printSensors();
-     HandL.write(90);
-     delay(100);
-      HandR.write(0);
-delay(100);
+  for(zz=0;zz<6;zz++)
+  { 
+    if((need_pos[zz]!=pos[zz])&&(millis()>times[zz]))
+    {
+      if(need_pos[zz]>pos[zz])
+      pos[zz]++;
+      else
+      pos[zz]--;
+      times[zz]=millis()+SLOW;
+    }
+    myservo[zz].write(pos[zz]);
+  }
+ // printSensors();
+   //  HandL.write(90);
+   //  delay(100);
+     // HandR.write(0);
+//delay(100);
     //Otto.jump(2,300);
     //for (k=0;k<5;k++)
     //Otto.updown(1,1000,20);//float steps=1, int T=1000, int h = 20
-     Otto.crusaito();//float steps=1, int T=1000, int h=20
-    HandR.write(180);
-    HandL.write(180);
-    analogWrite(3,180);
-    delay(100);
-}
-    /*
+     //Otto.jitter(5,500, 40);
+    //HandR.write(180);
+    //HandL.write(180);
+    ///analogWrite(3,180);
+    //delay(100);
+ //   Otto.crusaito(10);
+//    Otto.flapping(10);
+  //  Otto.walk(10,125,FORWARD);
+
+    
     //TODO Otto.tiptoeSwing();//float steps=1, int T=900, int h=20
     //for (k=0;k<5;k++)
     //Otto.jitter(5,100, 40);//float steps=1, int T=500, int h=20
